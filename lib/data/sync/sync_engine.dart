@@ -1,9 +1,12 @@
 import 'dart:async';
 
+import 'package:cloud_firestore/cloud_firestore.dart' show FirebaseFirestore;
 import 'package:drift/drift.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/services/firebase_bootstrap.dart';
 import '../local/database.dart';
+import 'firestore_remote_adapter.dart';
 import 'remote_adapter.dart';
 
 /// Drains the outbox to the remote with exponential backoff.
@@ -107,7 +110,10 @@ class SyncEngine {
 }
 
 final remoteAdapterProvider = Provider<RemoteAdapter>((ref) {
-  // Swapped to FirestoreRemoteAdapter once Firebase is configured (story 0.3).
+  // Lights up when the Firebase key files are added (firebase_bootstrap.dart).
+  if (ref.watch(firebaseReadyProvider)) {
+    return FirestoreRemoteAdapter(FirebaseFirestore.instance);
+  }
   return NoopRemoteAdapter();
 });
 
