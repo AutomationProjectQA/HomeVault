@@ -6,6 +6,7 @@ import 'core/router/app_router.dart';
 import 'core/services/app_lock_service.dart';
 import 'core/services/settings_service.dart';
 import 'core/theme/app_theme.dart';
+import 'data/repositories/reminder_repository.dart';
 import 'features/lock/lock_screen.dart';
 
 void main() {
@@ -17,6 +18,7 @@ class HomeVaultApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(reminderEngineBootstrapProvider);
     final lockEnabled = ref.watch(appLockEnabledProvider).value ?? false;
     final unlocked = ref.watch(sessionUnlockedProvider);
 

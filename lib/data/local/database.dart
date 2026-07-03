@@ -14,6 +14,7 @@ part 'database.g.dart';
   Events,
   Documents,
   Reminders,
+  NotificationLogs,
   OutboxEntries,
 ])
 class AppDatabase extends _$AppDatabase {
@@ -23,12 +24,14 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
         onCreate: (m) => m.createAll(),
-        // Future versions: use m.addColumn / m.createTable per version bump.
+        onUpgrade: (m, from, to) async {
+          if (from < 2) await m.createTable(notificationLogs);
+        },
       );
 
   // ---- Outbox helpers (used by all repositories) ----

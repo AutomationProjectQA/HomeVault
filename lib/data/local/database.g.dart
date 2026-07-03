@@ -5415,6 +5415,362 @@ class RemindersCompanion extends UpdateCompanion<Reminder> {
   }
 }
 
+class $NotificationLogsTable extends NotificationLogs
+    with TableInfo<$NotificationLogsTable, NotificationLog> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $NotificationLogsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _reminderIdMeta = const VerificationMeta(
+    'reminderId',
+  );
+  @override
+  late final GeneratedColumn<String> reminderId = GeneratedColumn<String>(
+    'reminder_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _firedAtMeta = const VerificationMeta(
+    'firedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> firedAt = GeneratedColumn<DateTime>(
+    'fired_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _actionMeta = const VerificationMeta('action');
+  @override
+  late final GeneratedColumn<String> action = GeneratedColumn<String>(
+    'action',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _actionedAtMeta = const VerificationMeta(
+    'actionedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> actionedAt = GeneratedColumn<DateTime>(
+    'actioned_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    reminderId,
+    firedAt,
+    action,
+    actionedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'notification_logs';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<NotificationLog> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('reminder_id')) {
+      context.handle(
+        _reminderIdMeta,
+        reminderId.isAcceptableOrUnknown(data['reminder_id']!, _reminderIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_reminderIdMeta);
+    }
+    if (data.containsKey('fired_at')) {
+      context.handle(
+        _firedAtMeta,
+        firedAt.isAcceptableOrUnknown(data['fired_at']!, _firedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_firedAtMeta);
+    }
+    if (data.containsKey('action')) {
+      context.handle(
+        _actionMeta,
+        action.isAcceptableOrUnknown(data['action']!, _actionMeta),
+      );
+    }
+    if (data.containsKey('actioned_at')) {
+      context.handle(
+        _actionedAtMeta,
+        actionedAt.isAcceptableOrUnknown(data['actioned_at']!, _actionedAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  NotificationLog map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return NotificationLog(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      reminderId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}reminder_id'],
+      )!,
+      firedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}fired_at'],
+      )!,
+      action: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}action'],
+      ),
+      actionedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}actioned_at'],
+      ),
+    );
+  }
+
+  @override
+  $NotificationLogsTable createAlias(String alias) {
+    return $NotificationLogsTable(attachedDatabase, alias);
+  }
+}
+
+class NotificationLog extends DataClass implements Insertable<NotificationLog> {
+  final int id;
+  final String reminderId;
+  final DateTime firedAt;
+  final String? action;
+  final DateTime? actionedAt;
+  const NotificationLog({
+    required this.id,
+    required this.reminderId,
+    required this.firedAt,
+    this.action,
+    this.actionedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['reminder_id'] = Variable<String>(reminderId);
+    map['fired_at'] = Variable<DateTime>(firedAt);
+    if (!nullToAbsent || action != null) {
+      map['action'] = Variable<String>(action);
+    }
+    if (!nullToAbsent || actionedAt != null) {
+      map['actioned_at'] = Variable<DateTime>(actionedAt);
+    }
+    return map;
+  }
+
+  NotificationLogsCompanion toCompanion(bool nullToAbsent) {
+    return NotificationLogsCompanion(
+      id: Value(id),
+      reminderId: Value(reminderId),
+      firedAt: Value(firedAt),
+      action: action == null && nullToAbsent
+          ? const Value.absent()
+          : Value(action),
+      actionedAt: actionedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(actionedAt),
+    );
+  }
+
+  factory NotificationLog.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return NotificationLog(
+      id: serializer.fromJson<int>(json['id']),
+      reminderId: serializer.fromJson<String>(json['reminderId']),
+      firedAt: serializer.fromJson<DateTime>(json['firedAt']),
+      action: serializer.fromJson<String?>(json['action']),
+      actionedAt: serializer.fromJson<DateTime?>(json['actionedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'reminderId': serializer.toJson<String>(reminderId),
+      'firedAt': serializer.toJson<DateTime>(firedAt),
+      'action': serializer.toJson<String?>(action),
+      'actionedAt': serializer.toJson<DateTime?>(actionedAt),
+    };
+  }
+
+  NotificationLog copyWith({
+    int? id,
+    String? reminderId,
+    DateTime? firedAt,
+    Value<String?> action = const Value.absent(),
+    Value<DateTime?> actionedAt = const Value.absent(),
+  }) => NotificationLog(
+    id: id ?? this.id,
+    reminderId: reminderId ?? this.reminderId,
+    firedAt: firedAt ?? this.firedAt,
+    action: action.present ? action.value : this.action,
+    actionedAt: actionedAt.present ? actionedAt.value : this.actionedAt,
+  );
+  NotificationLog copyWithCompanion(NotificationLogsCompanion data) {
+    return NotificationLog(
+      id: data.id.present ? data.id.value : this.id,
+      reminderId: data.reminderId.present
+          ? data.reminderId.value
+          : this.reminderId,
+      firedAt: data.firedAt.present ? data.firedAt.value : this.firedAt,
+      action: data.action.present ? data.action.value : this.action,
+      actionedAt: data.actionedAt.present
+          ? data.actionedAt.value
+          : this.actionedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('NotificationLog(')
+          ..write('id: $id, ')
+          ..write('reminderId: $reminderId, ')
+          ..write('firedAt: $firedAt, ')
+          ..write('action: $action, ')
+          ..write('actionedAt: $actionedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, reminderId, firedAt, action, actionedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is NotificationLog &&
+          other.id == this.id &&
+          other.reminderId == this.reminderId &&
+          other.firedAt == this.firedAt &&
+          other.action == this.action &&
+          other.actionedAt == this.actionedAt);
+}
+
+class NotificationLogsCompanion extends UpdateCompanion<NotificationLog> {
+  final Value<int> id;
+  final Value<String> reminderId;
+  final Value<DateTime> firedAt;
+  final Value<String?> action;
+  final Value<DateTime?> actionedAt;
+  const NotificationLogsCompanion({
+    this.id = const Value.absent(),
+    this.reminderId = const Value.absent(),
+    this.firedAt = const Value.absent(),
+    this.action = const Value.absent(),
+    this.actionedAt = const Value.absent(),
+  });
+  NotificationLogsCompanion.insert({
+    this.id = const Value.absent(),
+    required String reminderId,
+    required DateTime firedAt,
+    this.action = const Value.absent(),
+    this.actionedAt = const Value.absent(),
+  }) : reminderId = Value(reminderId),
+       firedAt = Value(firedAt);
+  static Insertable<NotificationLog> custom({
+    Expression<int>? id,
+    Expression<String>? reminderId,
+    Expression<DateTime>? firedAt,
+    Expression<String>? action,
+    Expression<DateTime>? actionedAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (reminderId != null) 'reminder_id': reminderId,
+      if (firedAt != null) 'fired_at': firedAt,
+      if (action != null) 'action': action,
+      if (actionedAt != null) 'actioned_at': actionedAt,
+    });
+  }
+
+  NotificationLogsCompanion copyWith({
+    Value<int>? id,
+    Value<String>? reminderId,
+    Value<DateTime>? firedAt,
+    Value<String?>? action,
+    Value<DateTime?>? actionedAt,
+  }) {
+    return NotificationLogsCompanion(
+      id: id ?? this.id,
+      reminderId: reminderId ?? this.reminderId,
+      firedAt: firedAt ?? this.firedAt,
+      action: action ?? this.action,
+      actionedAt: actionedAt ?? this.actionedAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (reminderId.present) {
+      map['reminder_id'] = Variable<String>(reminderId.value);
+    }
+    if (firedAt.present) {
+      map['fired_at'] = Variable<DateTime>(firedAt.value);
+    }
+    if (action.present) {
+      map['action'] = Variable<String>(action.value);
+    }
+    if (actionedAt.present) {
+      map['actioned_at'] = Variable<DateTime>(actionedAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('NotificationLogsCompanion(')
+          ..write('id: $id, ')
+          ..write('reminderId: $reminderId, ')
+          ..write('firedAt: $firedAt, ')
+          ..write('action: $action, ')
+          ..write('actionedAt: $actionedAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $OutboxEntriesTable extends OutboxEntries
     with TableInfo<$OutboxEntriesTable, OutboxEntry> {
   @override
@@ -5894,6 +6250,9 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $EventsTable events = $EventsTable(this);
   late final $DocumentsTable documents = $DocumentsTable(this);
   late final $RemindersTable reminders = $RemindersTable(this);
+  late final $NotificationLogsTable notificationLogs = $NotificationLogsTable(
+    this,
+  );
   late final $OutboxEntriesTable outboxEntries = $OutboxEntriesTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
@@ -5907,6 +6266,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     events,
     documents,
     reminders,
+    notificationLogs,
     outboxEntries,
   ];
 }
@@ -8407,6 +8767,210 @@ typedef $$RemindersTableProcessedTableManager =
       Reminder,
       PrefetchHooks Function()
     >;
+typedef $$NotificationLogsTableCreateCompanionBuilder =
+    NotificationLogsCompanion Function({
+      Value<int> id,
+      required String reminderId,
+      required DateTime firedAt,
+      Value<String?> action,
+      Value<DateTime?> actionedAt,
+    });
+typedef $$NotificationLogsTableUpdateCompanionBuilder =
+    NotificationLogsCompanion Function({
+      Value<int> id,
+      Value<String> reminderId,
+      Value<DateTime> firedAt,
+      Value<String?> action,
+      Value<DateTime?> actionedAt,
+    });
+
+class $$NotificationLogsTableFilterComposer
+    extends Composer<_$AppDatabase, $NotificationLogsTable> {
+  $$NotificationLogsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get reminderId => $composableBuilder(
+    column: $table.reminderId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get firedAt => $composableBuilder(
+    column: $table.firedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get action => $composableBuilder(
+    column: $table.action,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get actionedAt => $composableBuilder(
+    column: $table.actionedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$NotificationLogsTableOrderingComposer
+    extends Composer<_$AppDatabase, $NotificationLogsTable> {
+  $$NotificationLogsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get reminderId => $composableBuilder(
+    column: $table.reminderId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get firedAt => $composableBuilder(
+    column: $table.firedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get action => $composableBuilder(
+    column: $table.action,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get actionedAt => $composableBuilder(
+    column: $table.actionedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$NotificationLogsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $NotificationLogsTable> {
+  $$NotificationLogsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get reminderId => $composableBuilder(
+    column: $table.reminderId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get firedAt =>
+      $composableBuilder(column: $table.firedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get action =>
+      $composableBuilder(column: $table.action, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get actionedAt => $composableBuilder(
+    column: $table.actionedAt,
+    builder: (column) => column,
+  );
+}
+
+class $$NotificationLogsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $NotificationLogsTable,
+          NotificationLog,
+          $$NotificationLogsTableFilterComposer,
+          $$NotificationLogsTableOrderingComposer,
+          $$NotificationLogsTableAnnotationComposer,
+          $$NotificationLogsTableCreateCompanionBuilder,
+          $$NotificationLogsTableUpdateCompanionBuilder,
+          (
+            NotificationLog,
+            BaseReferences<
+              _$AppDatabase,
+              $NotificationLogsTable,
+              NotificationLog
+            >,
+          ),
+          NotificationLog,
+          PrefetchHooks Function()
+        > {
+  $$NotificationLogsTableTableManager(
+    _$AppDatabase db,
+    $NotificationLogsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$NotificationLogsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$NotificationLogsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$NotificationLogsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<String> reminderId = const Value.absent(),
+                Value<DateTime> firedAt = const Value.absent(),
+                Value<String?> action = const Value.absent(),
+                Value<DateTime?> actionedAt = const Value.absent(),
+              }) => NotificationLogsCompanion(
+                id: id,
+                reminderId: reminderId,
+                firedAt: firedAt,
+                action: action,
+                actionedAt: actionedAt,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required String reminderId,
+                required DateTime firedAt,
+                Value<String?> action = const Value.absent(),
+                Value<DateTime?> actionedAt = const Value.absent(),
+              }) => NotificationLogsCompanion.insert(
+                id: id,
+                reminderId: reminderId,
+                firedAt: firedAt,
+                action: action,
+                actionedAt: actionedAt,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$NotificationLogsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $NotificationLogsTable,
+      NotificationLog,
+      $$NotificationLogsTableFilterComposer,
+      $$NotificationLogsTableOrderingComposer,
+      $$NotificationLogsTableAnnotationComposer,
+      $$NotificationLogsTableCreateCompanionBuilder,
+      $$NotificationLogsTableUpdateCompanionBuilder,
+      (
+        NotificationLog,
+        BaseReferences<_$AppDatabase, $NotificationLogsTable, NotificationLog>,
+      ),
+      NotificationLog,
+      PrefetchHooks Function()
+    >;
 typedef $$OutboxEntriesTableCreateCompanionBuilder =
     OutboxEntriesCompanion Function({
       Value<int> seq,
@@ -8661,6 +9225,8 @@ class $AppDatabaseManager {
       $$DocumentsTableTableManager(_db, _db.documents);
   $$RemindersTableTableManager get reminders =>
       $$RemindersTableTableManager(_db, _db.reminders);
+  $$NotificationLogsTableTableManager get notificationLogs =>
+      $$NotificationLogsTableTableManager(_db, _db.notificationLogs);
   $$OutboxEntriesTableTableManager get outboxEntries =>
       $$OutboxEntriesTableTableManager(_db, _db.outboxEntries);
 }

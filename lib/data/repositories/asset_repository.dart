@@ -4,6 +4,7 @@ import 'package:uuid/uuid.dart';
 
 import '../../core/services/auth_service.dart';
 import '../local/database.dart';
+import 'reminder_repository.dart';
 
 class AssetDraft {
   const AssetDraft({
@@ -32,10 +33,11 @@ class AssetDraft {
 }
 
 class AssetRepository {
-  AssetRepository(this._db, this._auth);
+  AssetRepository(this._db, this._auth, this._reminders);
 
   final AppDatabase _db;
   final AuthService _auth;
+  final ReminderRepository _reminders;
 
   Future<int> countActiveAssets() async {
     final count = _db.assets.id.count();
@@ -123,22 +125,14 @@ class AssetRepository {
 
     final warrantyEnd = draft.warrantyEndDate;
     if (warrantyEnd != null && warrantyEnd.isAfter(now)) {
-      final reminderId = const Uuid().v4();
-      await _db.upsertWithOutbox(
-        _db.reminders,
-        RemindersCompanion.insert(
-          id: reminderId,
-          homeId: homeId,
-          createdBy: user.id,
-          createdAt: now,
-          updatedAt: now,
-          sourceType: 'asset',
-          sourceId: Value(assetId),
-          title: 'Warranty expires: ${draft.name.trim()}',
-          priority: 'critical',
-          dueAt: warrantyEnd,
-        ),
-        entityId: reminderId,
+      // Engine schedules the critical chain (30d/7d/1d/due-day, per policy).
+      await _reminders.create(
+        homeId: homeId,
+        sourceType: 'asset',
+        sourceId: assetId,
+        title: 'Warranty expires: ${draft.name.trim()}',
+        priority: 'critical',
+        dueAt: warrantyEnd,
       );
     }
 
@@ -160,19 +154,7 @@ class AssetRepository {
       entityId: id,
     );
 
-    final reminders = await (_db.select(_db.reminders)
-          ..where((t) =>
-              t.sourceType.equals('asset') &
-              t.sourceId.equals(id) &
-              t.state.isNotIn(['completed', 'cancelled'])))
-        .get();
-    for (final reminder in reminders) {
-      await _db.upsertWithOutbox(
-        _db.reminders,
-        reminder.copyWith(state: 'cancelled', updatedAt: now),
-        entityId: reminder.id,
-      );
-    }
+    await _reminders.cancelForSource('asset', id);
   }
 }
 
@@ -180,6 +162,7 @@ final assetRepositoryProvider = Provider<AssetRepository>((ref) {
   return AssetRepository(
     ref.watch(databaseProvider),
     ref.watch(authServiceProvider),
+    ref.watch(reminderRepositoryProvider),
   );
 });
 

@@ -1,6 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:homevault/core/services/analytics_service.dart';
+import 'package:homevault/core/services/notifications/notification_scheduler.dart';
 import 'package:homevault/data/local/database.dart';
 import 'package:homevault/data/repositories/asset_repository.dart';
+import 'package:homevault/data/repositories/reminder_repository.dart';
 
 import '../helpers.dart';
 
@@ -10,7 +13,9 @@ void main() {
 
   setUp(() {
     db = newTestDatabase();
-    repo = AssetRepository(db, const FakeAuthService());
+    final reminders = ReminderRepository(db, const FakeAuthService(),
+        NoopNotificationScheduler(), NoopAnalyticsService());
+    repo = AssetRepository(db, const FakeAuthService(), reminders);
   });
   tearDown(() => db.close());
 

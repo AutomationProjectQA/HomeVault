@@ -112,6 +112,16 @@ class Reminders extends Table with SyncColumns {
   BoolColumn get escalationEnabled => boolean().withDefault(const Constant(false))();
 }
 
+/// Per-device record of fired notifications and what the user did with them.
+/// Powers ignore-detection, fatigue guards, and the reminder-effectiveness KPI.
+class NotificationLogs extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  TextColumn get reminderId => text()();
+  DateTimeColumn get firedAt => dateTime()();
+  TextColumn get action => text().nullable()(); // opened | done | snoozed | null=unactioned
+  DateTimeColumn get actionedAt => dateTime().nullable()();
+}
+
 /// Outbox pattern: every local mutation queues here until pushed remote.
 class OutboxEntries extends Table {
   IntColumn get seq => integer().autoIncrement()();

@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/router/app_router.dart';
 import '../../core/theme/tokens.dart';
 import '../../data/repositories/home_repository.dart';
+import '../reminders/today_tasks.dart';
 import 'dashboard_providers.dart';
 
 /// Dashboard v1 (Sprint 1): live home + stats from Drift streams.
@@ -25,7 +26,7 @@ class DashboardScreen extends StatelessWidget {
             SizedBox(height: AppSpacing.lg),
             _SectionTitle("Today's tasks"),
             SizedBox(height: AppSpacing.sm),
-            _EmptyTasksCard(),
+            TodayTasksList(emptyState: _EmptyTasksCard()),
             SizedBox(height: AppSpacing.lg),
             _SectionTitle('Your home'),
             SizedBox(height: AppSpacing.sm),
