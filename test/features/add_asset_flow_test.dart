@@ -40,6 +40,10 @@ void main() {
   // exist on exactly one screen, and taps target the topmost route.
   testWidgets('add asset from dashboard CTA updates list and stats',
       (tester) async {
+    // Tall phone-shaped surface so the whole form stays mounted.
+    await tester.binding.setSurfaceSize(const Size(420, 1400));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
     await tester.pumpWidget(app());
     await pumpUntil(tester, find.text('Add your first appliance'));
 

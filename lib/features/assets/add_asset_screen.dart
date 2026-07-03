@@ -5,8 +5,12 @@ import 'package:intl/intl.dart';
 
 import '../../core/router/app_router.dart';
 import '../../core/services/analytics_service.dart';
+import '../../core/services/attachment_service.dart';
+import '../../core/services/ocr/invoice_parser.dart';
+import '../../core/services/ocr/ocr_service.dart';
 import '../../core/theme/tokens.dart';
 import '../../data/repositories/asset_repository.dart';
+import '../../data/repositories/document_repository.dart';
 import '../../data/repositories/home_repository.dart';
 import 'asset_categories.dart';
 
@@ -33,6 +37,55 @@ class _AddAssetScreenState extends ConsumerState<AddAssetScreen> {
   DateTime? _warrantyEnd;
   bool _showDetails = false;
   bool _saving = false;
+  PickedAttachment? _invoice;
+  bool _scanning = false;
+
+  Future<void> _scanInvoice({required bool fromCamera}) async {
+    if (_scanning) return;
+    setState(() => _scanning = true);
+    try {
+      final picked = await ref
+          .read(attachmentPickerProvider)
+          .pickImage(fromCamera: fromCamera);
+      if (picked == null) return;
+      setState(() => _invoice = picked);
+
+      final ocr = ref.read(ocrServiceProvider);
+      final text = await ocr.extractText(picked.path);
+      if (text == null) {
+        if (mounted && !ocr.isSupported) {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+              content:
+                  Text('Invoice attached. Auto-fill needs the mobile app.')));
+        }
+        return;
+      }
+
+      final scan = parseInvoiceText(text);
+      if (!scan.hasAnyField) return;
+      setState(() {
+        if (scan.vendor != null && _vendor.text.isEmpty) {
+          _vendor.text = scan.vendor!;
+        }
+        if (scan.amount != null && _price.text.isEmpty) {
+          _price.text = scan.amount!.toStringAsFixed(0);
+        }
+        _purchaseDate ??= scan.purchaseDate;
+        _showDetails = true;
+      });
+      ref.read(analyticsProvider).logEvent('invoice_scanned', {
+        'vendor_found': scan.vendor != null,
+        'amount_found': scan.amount != null,
+        'date_found': scan.purchaseDate != null,
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text('Details filled from your invoice — please verify.')));
+      }
+    } finally {
+      if (mounted) setState(() => _scanning = false);
+    }
+  }
 
   @override
   void dispose() {
@@ -67,7 +120,7 @@ class _AddAssetScreenState extends ConsumerState<AddAssetScreen> {
       final repo = ref.read(assetRepositoryProvider);
       final hadAssets = await repo.countActiveAssets() > 0;
 
-      await repo.addAsset(
+      final asset = await repo.addAsset(
             AssetDraft(
               name: name,
               category: _category,
@@ -82,6 +135,19 @@ class _AddAssetScreenState extends ConsumerState<AddAssetScreen> {
             ),
             homeId: home.id,
           );
+
+      final invoice = _invoice;
+      if (invoice != null) {
+        await ref.read(documentRepositoryProvider).attach(
+              homeId: home.id,
+              sourceType: 'asset',
+              sourceId: asset.id,
+              title: 'Invoice',
+              category: 'invoice',
+              localPath: invoice.path,
+              mimeType: invoice.mimeType,
+            );
+      }
 
       final analytics = ref.read(analyticsProvider);
       analytics.logEvent('asset_added', {'category': _category});
@@ -121,6 +187,14 @@ class _AddAssetScreenState extends ConsumerState<AddAssetScreen> {
         child: ListView(
           padding: const EdgeInsets.all(AppSpacing.md),
           children: [
+            _InvoiceCard(
+              invoice: _invoice,
+              scanning: _scanning,
+              onScan: () => _scanInvoice(fromCamera: true),
+              onPick: () => _scanInvoice(fromCamera: false),
+              onRemove: () => setState(() => _invoice = null),
+            ),
+            const SizedBox(height: AppSpacing.md),
             TextField(
               controller: _name,
               autofocus: true,
@@ -227,6 +301,85 @@ class _AddAssetScreenState extends ConsumerState<AddAssetScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _InvoiceCard extends StatelessWidget {
+  const _InvoiceCard({
+    required this.invoice,
+    required this.scanning,
+    required this.onScan,
+    required this.onPick,
+    required this.onRemove,
+  });
+
+  final PickedAttachment? invoice;
+  final bool scanning;
+  final VoidCallback onScan;
+  final VoidCallback onPick;
+  final VoidCallback onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
+    if (invoice != null) {
+      return Material(
+        color: scheme.primary.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(AppRadius.sm),
+        child: ListTile(
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppRadius.sm)),
+          leading: Icon(Icons.receipt_long, color: scheme.primary),
+          title: const Text('Invoice attached',
+              style: TextStyle(fontWeight: FontWeight.w600)),
+          subtitle: const Text('Saved with this asset'),
+          trailing: IconButton(
+              icon: const Icon(Icons.close), onPressed: onRemove),
+        ),
+      );
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: scheme.primary.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(AppRadius.sm),
+        border: Border.all(color: scheme.primary.withValues(alpha: 0.2)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const Text('Have the invoice? Skip the typing.',
+              style: TextStyle(fontWeight: FontWeight.w600)),
+          const SizedBox(height: AppSpacing.sm),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: scanning ? null : onScan,
+                  icon: scanning
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2))
+                      : const Icon(Icons.photo_camera_outlined),
+                  label: const Text('Scan invoice'),
+                ),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: scanning ? null : onPick,
+                  icon: const Icon(Icons.photo_library_outlined),
+                  label: const Text('From gallery'),
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }

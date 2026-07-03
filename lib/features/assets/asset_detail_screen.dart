@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import '../../core/theme/tokens.dart';
 import '../../data/local/database.dart';
 import '../../data/repositories/asset_repository.dart';
+import '../../data/repositories/document_repository.dart';
 import 'asset_categories.dart';
 import 'warranty_status.dart';
 
@@ -153,6 +154,8 @@ class AssetDetailScreen extends ConsumerWidget {
                   : '₹${asset.purchasePrice!.toStringAsFixed(0)}'),
           _FactRow('Notes', asset.notes),
 
+          _DocumentsSection(assetId: assetId),
+
           const SizedBox(height: AppSpacing.lg),
           Text('Timeline',
               style: Theme.of(context)
@@ -186,6 +189,51 @@ class AssetDetailScreen extends ConsumerWidget {
             ),
         ],
       ),
+    );
+  }
+}
+
+class _DocumentsSection extends ConsumerWidget {
+  const _DocumentsSection({required this.assetId});
+
+  final String assetId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final docs = ref.watch(assetDocumentsProvider(assetId)).value ?? const [];
+    if (docs.isEmpty) return const SizedBox.shrink();
+
+    final scheme = Theme.of(context).colorScheme;
+    final dateFormat = DateFormat('d MMM yyyy');
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: AppSpacing.lg),
+        Text('Documents',
+            style: Theme.of(context)
+                .textTheme
+                .titleMedium
+                ?.copyWith(fontWeight: FontWeight.w700)),
+        const SizedBox(height: AppSpacing.sm),
+        for (final doc in docs)
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: CircleAvatar(
+              radius: 16,
+              backgroundColor: scheme.primary.withValues(alpha: 0.1),
+              child: Icon(Icons.description_outlined,
+                  size: 16, color: scheme.primary),
+            ),
+            title: Text(doc.title,
+                style: const TextStyle(fontWeight: FontWeight.w600)),
+            subtitle: Text(dateFormat.format(doc.createdAt)),
+            trailing: doc.remotePath == null
+                ? const Tooltip(
+                    message: 'On this device — cloud backup after sync setup',
+                    child: Icon(Icons.smartphone, size: 18))
+                : const Icon(Icons.cloud_done_outlined, size: 18),
+          ),
+      ],
     );
   }
 }
