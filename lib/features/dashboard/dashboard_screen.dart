@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/tokens.dart';
+import '../../data/repositories/home_repository.dart';
 import '../add/quick_add_sheet.dart';
+import 'dashboard_providers.dart';
 
-/// Dashboard v0 (Sprint 0/1): structure + teaching empty states.
-/// Real data wiring lands with Assets (Sprint 2) and Bills (Sprint 4).
+/// Dashboard v1 (Sprint 1): live home + stats from Drift streams.
+/// Task cards become real with the Reminder Engine (Sprint 3).
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key});
 
@@ -33,16 +36,17 @@ class DashboardScreen extends StatelessWidget {
   }
 }
 
-class _Header extends StatelessWidget {
+class _Header extends ConsumerWidget {
   const _Header();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final textTheme = Theme.of(context).textTheme;
+    final home = ref.watch(currentHomeProvider).value;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('My Home',
+        Text(home?.name ?? 'My Home',
             style: textTheme.headlineSmall
                 ?.copyWith(fontWeight: FontWeight.w700)),
         const SizedBox(height: AppSpacing.xs),
@@ -169,18 +173,25 @@ class _EmptyTasksCard extends StatelessWidget {
   }
 }
 
-class _StatsStrip extends StatelessWidget {
+class _StatsStrip extends ConsumerWidget {
   const _StatsStrip();
 
   @override
-  Widget build(BuildContext context) {
-    return const Row(
+  Widget build(BuildContext context, WidgetRef ref) {
+    final stats = ref.watch(dashboardStatsProvider);
+    return Row(
       children: [
-        Expanded(child: _StatCard(value: '0', label: 'Assets')),
-        SizedBox(width: AppSpacing.sm),
-        Expanded(child: _StatCard(value: '₹0', label: 'Bills this month')),
-        SizedBox(width: AppSpacing.sm),
-        Expanded(child: _StatCard(value: '0', label: 'Pending tasks')),
+        Expanded(
+            child: _StatCard(value: '${stats.assetCount}', label: 'Assets')),
+        const SizedBox(width: AppSpacing.sm),
+        Expanded(
+            child: _StatCard(
+                value: '₹${stats.billsThisMonth.toStringAsFixed(0)}',
+                label: 'Bills this month')),
+        const SizedBox(width: AppSpacing.sm),
+        Expanded(
+            child: _StatCard(
+                value: '${stats.pendingTasks}', label: 'Pending tasks')),
       ],
     );
   }
