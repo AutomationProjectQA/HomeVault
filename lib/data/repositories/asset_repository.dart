@@ -140,6 +140,57 @@ class AssetRepository {
         .getSingle();
   }
 
+  /// Updates asset fields; if the warranty end date changed, the old
+  /// warranty reminder chain is replaced with one for the new date.
+  Future<Asset> updateAsset(String id, AssetDraft draft) async {
+    final existing = await (_db.select(_db.assets)
+          ..where((t) => t.id.equals(id)))
+        .getSingle();
+    final now = DateTime.now();
+
+    String? clean(String? s) {
+      final t = s?.trim();
+      return (t == null || t.isEmpty) ? null : t;
+    }
+
+    await _db.upsertWithOutbox(
+      _db.assets,
+      existing.copyWith(
+        name: draft.name.trim(),
+        category: draft.category,
+        brand: Value(clean(draft.brand)),
+        model: Value(clean(draft.model)),
+        serialNumber: Value(clean(draft.serialNumber)),
+        vendor: Value(clean(draft.vendor)),
+        purchaseDate: Value(draft.purchaseDate),
+        purchasePrice: Value(draft.purchasePrice),
+        warrantyEndDate: Value(draft.warrantyEndDate),
+        notes: Value(clean(draft.notes)),
+        updatedAt: now,
+      ),
+      entityId: id,
+    );
+
+    if (existing.warrantyEndDate != draft.warrantyEndDate) {
+      // Scoped: a warranty edit must not cancel service-due reminders.
+      await _reminders.cancelForSource('asset', id,
+          titlePrefix: 'Warranty expires:');
+      final warrantyEnd = draft.warrantyEndDate;
+      if (warrantyEnd != null && warrantyEnd.isAfter(now)) {
+        await _reminders.create(
+          homeId: existing.homeId,
+          sourceType: 'asset',
+          sourceId: id,
+          title: 'Warranty expires: ${draft.name.trim()}',
+          priority: 'critical',
+          dueAt: warrantyEnd,
+        );
+      }
+    }
+
+    return (_db.select(_db.assets)..where((t) => t.id.equals(id))).getSingle();
+  }
+
   /// Logs a completed service on the asset timeline; optionally sets the
   /// next service due as a recurring medium reminder (story 4.5).
   Future<void> logService({

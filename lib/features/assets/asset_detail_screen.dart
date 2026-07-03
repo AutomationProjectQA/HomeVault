@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
+import '../../core/router/app_router.dart';
 import '../../core/theme/tokens.dart';
 import '../../data/local/database.dart';
 import '../../data/repositories/asset_repository.dart';
@@ -57,6 +58,10 @@ class AssetDetailScreen extends ConsumerWidget {
       appBar: AppBar(
         title: Text(asset.name),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.edit_outlined),
+            onPressed: () => context.push(Routes.editAsset(asset.id)),
+          ),
           IconButton(
             icon: const Icon(Icons.delete_outline),
             onPressed: () => _confirmDelete(context, ref, asset),

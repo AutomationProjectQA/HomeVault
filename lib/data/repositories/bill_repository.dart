@@ -88,6 +88,67 @@ class BillRepository {
     return (_db.select(_db.bills)..where((t) => t.id.equals(id))).getSingle();
   }
 
+  /// Updates an open bill; its reminder chain is replaced to match.
+  Future<Bill> updateBill({
+    required String billId,
+    required String type,
+    String? provider,
+    double? amount,
+    required DateTime dueDate,
+    String? recurrenceRule,
+    String? notes,
+  }) async {
+    final existing = await (_db.select(_db.bills)
+          ..where((t) => t.id.equals(billId)))
+        .getSingle();
+    final now = DateTime.now();
+
+    await _db.upsertWithOutbox(
+      _db.bills,
+      existing.copyWith(
+        type: type,
+        provider: Value(_clean(provider)),
+        amount: Value(amount),
+        dueDate: dueDate,
+        recurrenceRule: Value(recurrenceRule),
+        notes: Value(_clean(notes)),
+        updatedAt: now,
+      ),
+      entityId: billId,
+    );
+
+    await _reminders.cancelForSource('bill', billId);
+    final label = billTypeByKey(type).label;
+    final providerSuffix =
+        _clean(provider) == null ? '' : ' (${_clean(provider)})';
+    await _reminders.create(
+      homeId: existing.homeId,
+      sourceType: 'bill',
+      sourceId: billId,
+      title: 'Pay $label bill$providerSuffix',
+      priority: 'critical',
+      dueAt: dueDate,
+    );
+
+    return (_db.select(_db.bills)..where((t) => t.id.equals(billId)))
+        .getSingle();
+  }
+
+  /// Soft delete; cancels the bill's reminder chain.
+  Future<void> deleteBill(String billId) async {
+    final bill = await (_db.select(_db.bills)
+          ..where((t) => t.id.equals(billId)))
+        .getSingleOrNull();
+    if (bill == null) return;
+    final now = DateTime.now();
+    await _db.upsertWithOutbox(
+      _db.bills,
+      bill.copyWith(deletedAt: Value(now), updatedAt: now),
+      entityId: billId,
+    );
+    await _reminders.cancelForSource('bill', billId);
+  }
+
   /// Mark paid: completes the reminder chain and — for recurring bills —
   /// auto-creates the next occurrence with its own chain. The user never
   /// re-creates a recurring bill.

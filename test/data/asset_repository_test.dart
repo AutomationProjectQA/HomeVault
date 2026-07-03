@@ -91,6 +91,45 @@ void main() {
     expect(reminder.state, 'cancelled');
   });
 
+  test('updateAsset replaces only the warranty reminder, keeps service ones',
+      () async {
+    final asset = await repo.addAsset(
+      AssetDraft(
+        name: 'AC',
+        warrantyEndDate: DateTime.now().add(const Duration(days: 100)),
+      ),
+      homeId: 'home-1',
+    );
+    await repo.logService(
+      homeId: 'home-1',
+      assetId: asset.id,
+      assetName: 'AC',
+      title: 'Serviced',
+      serviceDate: DateTime.now(),
+      nextDue: DateTime.now().add(const Duration(days: 365)),
+    );
+
+    final newWarranty = DateTime(DateTime.now().year + 3, 1, 15);
+    final updated = await repo.updateAsset(
+        asset.id,
+        AssetDraft(
+            name: 'AC Bedroom',
+            brand: 'Daikin',
+            warrantyEndDate: newWarranty));
+
+    expect(updated.name, 'AC Bedroom');
+    expect(updated.brand, 'Daikin');
+    expect(updated.warrantyEndDate, newWarranty);
+
+    final reminders = await db.select(db.reminders).get();
+    final open = reminders.where((r) => r.state == 'scheduled').toList();
+    expect(open, hasLength(2)); // new warranty + untouched service reminder
+    expect(open.where((r) => r.title.startsWith('Warranty')).single.dueAt,
+        newWarranty);
+    expect(open.any((r) => r.title.startsWith('Service due')), isTrue);
+    expect(reminders.where((r) => r.state == 'cancelled'), hasLength(1));
+  });
+
   test('watchActiveAssets emits newest first and hides deleted', () async {
     final a = await repo.addAsset(const AssetDraft(name: 'A'), homeId: 'h');
     await Future<void>.delayed(const Duration(milliseconds: 10));

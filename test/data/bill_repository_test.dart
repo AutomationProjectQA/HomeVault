@@ -102,6 +102,38 @@ void main() {
     expect(water.percentChange, isNull); // nothing last month
   });
 
+  test('updateBill rewrites fields and replaces the reminder chain', () async {
+    final bill = await repo.addBill(
+        homeId: 'h', type: 'water', dueDate: DateTime(2026, 7, 20));
+
+    final updated = await repo.updateBill(
+      billId: bill.id,
+      type: 'internet',
+      provider: 'Jio',
+      amount: 999,
+      dueDate: DateTime(2026, 7, 25),
+      recurrenceRule: 'FREQ=MONTHLY',
+    );
+
+    expect(updated.type, 'internet');
+    expect(updated.amount, 999);
+    final open = (await db.select(db.reminders).get())
+        .where((r) => r.state == 'scheduled')
+        .single;
+    expect(open.title, 'Pay Internet bill (Jio)');
+    expect(open.dueAt, DateTime(2026, 7, 25));
+  });
+
+  test('deleteBill soft-deletes and cancels its reminders', () async {
+    final bill = await repo.addBill(
+        homeId: 'h', type: 'gas', dueDate: DateTime(2026, 7, 20));
+    await repo.deleteBill(bill.id);
+
+    expect(await repo.watchBills().first, isEmpty);
+    final reminder = (await db.select(db.reminders).get()).single;
+    expect(reminder.state, 'cancelled');
+  });
+
   test('watchBills lists open bills by due date, then paid history', () async {
     final a = await repo.addBill(
         homeId: 'h', type: 'water', dueDate: DateTime(2026, 7, 20));

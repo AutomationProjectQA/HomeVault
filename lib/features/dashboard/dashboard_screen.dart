@@ -9,6 +9,7 @@ import '../../data/repositories/home_repository.dart';
 import '../../data/repositories/reminder_repository.dart';
 import '../reminders/today_tasks.dart';
 import 'dashboard_providers.dart';
+import 'health_score.dart';
 
 /// Dashboard v1 (Sprint 1): live home + stats from Drift streams.
 /// Task cards become real with the Reminder Engine (Sprint 3).
@@ -24,7 +25,7 @@ class DashboardScreen extends StatelessWidget {
           children: const [
             _Header(),
             SizedBox(height: AppSpacing.lg),
-            _SetupProgressCard(progress: 0.15),
+            _HealthCard(),
             SizedBox(height: AppSpacing.lg),
             _SectionTitle("Today's tasks"),
             SizedBox(height: AppSpacing.sm),
@@ -63,14 +64,16 @@ class _Header extends ConsumerWidget {
   }
 }
 
-class _SetupProgressCard extends StatelessWidget {
-  const _SetupProgressCard({required this.progress});
-
-  final double progress;
+class _HealthCard extends ConsumerWidget {
+  const _HealthCard();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final health = ref.watch(healthScoreProvider).value;
     final scheme = Theme.of(context).colorScheme;
+    final score = health?.score ?? 100;
+    final pending = health?.pendingCount ?? 0;
+    final progress = score / 100;
     return Container(
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
@@ -94,7 +97,7 @@ class _SetupProgressCard extends StatelessWidget {
                 ),
                 Center(
                   child: Text(
-                    '${(progress * 100).round()}%',
+                    '$score',
                     style: const TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.w700,
@@ -105,16 +108,20 @@ class _SetupProgressCard extends StatelessWidget {
             ),
           ),
           const SizedBox(width: AppSpacing.md),
-          const Expanded(
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Home setup',
-                    style: TextStyle(
+                Text('Home health: ${health?.band ?? 'Excellent'}',
+                    style: const TextStyle(
                         color: Colors.white, fontWeight: FontWeight.w700)),
-                SizedBox(height: 2),
-                Text('Add your first appliance to secure your home',
-                    style: TextStyle(color: Colors.white70, fontSize: 13)),
+                const SizedBox(height: 2),
+                Text(
+                    pending == 0
+                        ? 'Everything is on track'
+                        : '$pending overdue ${pending == 1 ? 'task' : 'tasks'} — clear them to recover',
+                    style:
+                        const TextStyle(color: Colors.white70, fontSize: 13)),
               ],
             ),
           ),

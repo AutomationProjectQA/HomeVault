@@ -112,6 +112,7 @@ class _BillCard extends ConsumerWidget {
         color: scheme.surface,
         borderRadius: AppRadius.card,
         child: ListTile(
+          onTap: paid ? null : () => context.push(Routes.editBill(bill.id)),
           shape: RoundedRectangleBorder(borderRadius: AppRadius.card),
           leading: CircleAvatar(
             backgroundColor: (paid

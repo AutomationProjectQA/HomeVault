@@ -20,7 +20,10 @@ const _repeatOptions = [
 
 /// ≤5 taps for a recurring bill: type (cycle pre-fills) → due date → save.
 class AddBillScreen extends ConsumerStatefulWidget {
-  const AddBillScreen({super.key});
+  const AddBillScreen({super.key, this.billId});
+
+  /// When set, the screen edits the existing open bill.
+  final String? billId;
 
   @override
   ConsumerState<AddBillScreen> createState() => _AddBillScreenState();
@@ -35,6 +38,36 @@ class _AddBillScreenState extends ConsumerState<AddBillScreen> {
   DateTime _dueDate = DateTime.now().add(const Duration(days: 7));
   bool _saving = false;
 
+  bool get _isEdit => widget.billId != null;
+
+  @override
+  void initState() {
+    super.initState();
+    if (_isEdit) _prefill();
+  }
+
+  Future<void> _prefill() async {
+    final bills = await ref.read(billRepositoryProvider).watchBills().first;
+    final bill = bills.where((b) => b.id == widget.billId).firstOrNull;
+    if (bill == null || !mounted) return;
+    setState(() {
+      _type = bill.type;
+      _rrule = bill.recurrenceRule;
+      _dueDate = bill.dueDate;
+      _amount.text = bill.amount?.toStringAsFixed(0) ?? '';
+      _provider.text = bill.provider ?? '';
+    });
+  }
+
+  Future<void> _delete() async {
+    await ref.read(billRepositoryProvider).deleteBill(widget.billId!);
+    if (mounted) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('Bill deleted.')));
+      context.go(Routes.bills);
+    }
+  }
+
   @override
   void dispose() {
     _provider.dispose();
@@ -48,15 +81,28 @@ class _AddBillScreenState extends ConsumerState<AddBillScreen> {
     try {
       final home = ref.read(currentHomeProvider).value;
       if (home == null) return;
-      await ref.read(billRepositoryProvider).addBill(
-            homeId: home.id,
-            type: _type,
-            provider: _provider.text,
-            amount: double.tryParse(_amount.text.trim()),
-            dueDate: _dueDate,
-            recurrenceRule: _rrule,
-          );
-      ref.read(analyticsProvider).logEvent('bill_added',
+      final repo = ref.read(billRepositoryProvider);
+      if (_isEdit) {
+        await repo.updateBill(
+          billId: widget.billId!,
+          type: _type,
+          provider: _provider.text,
+          amount: double.tryParse(_amount.text.trim()),
+          dueDate: _dueDate,
+          recurrenceRule: _rrule,
+        );
+      } else {
+        await repo.addBill(
+          homeId: home.id,
+          type: _type,
+          provider: _provider.text,
+          amount: double.tryParse(_amount.text.trim()),
+          dueDate: _dueDate,
+          recurrenceRule: _rrule,
+        );
+      }
+      ref.read(analyticsProvider).logEvent(
+          _isEdit ? 'bill_edited' : 'bill_added',
           {'type': _type, 'recurring': _rrule != null});
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
@@ -74,7 +120,14 @@ class _AddBillScreenState extends ConsumerState<AddBillScreen> {
   Widget build(BuildContext context) {
     final dateFormat = DateFormat('EEE, d MMM yyyy');
     return Scaffold(
-      appBar: AppBar(title: const Text('Add bill')),
+      appBar: AppBar(
+        title: Text(_isEdit ? 'Edit bill' : 'Add bill'),
+        actions: [
+          if (_isEdit)
+            IconButton(
+                icon: const Icon(Icons.delete_outline), onPressed: _delete),
+        ],
+      ),
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.all(AppSpacing.md),

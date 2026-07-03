@@ -17,7 +17,10 @@ import 'asset_categories.dart';
 /// Quick-add first: name + category is enough to save. Details expand below.
 /// Camera-first OCR capture lands with story 2.3.
 class AddAssetScreen extends ConsumerStatefulWidget {
-  const AddAssetScreen({super.key});
+  const AddAssetScreen({super.key, this.assetId});
+
+  /// When set, the screen edits the existing asset instead of creating one.
+  final String? assetId;
 
   @override
   ConsumerState<AddAssetScreen> createState() => _AddAssetScreenState();
@@ -39,6 +42,35 @@ class _AddAssetScreenState extends ConsumerState<AddAssetScreen> {
   bool _saving = false;
   PickedAttachment? _invoice;
   bool _scanning = false;
+
+  bool get _isEdit => widget.assetId != null;
+
+  @override
+  void initState() {
+    super.initState();
+    if (_isEdit) _prefill();
+  }
+
+  Future<void> _prefill() async {
+    final asset = await ref
+        .read(assetRepositoryProvider)
+        .watchAsset(widget.assetId!)
+        .first;
+    if (asset == null || !mounted) return;
+    setState(() {
+      _name.text = asset.name;
+      _category = asset.category;
+      _brand.text = asset.brand ?? '';
+      _model.text = asset.model ?? '';
+      _serial.text = asset.serialNumber ?? '';
+      _vendor.text = asset.vendor ?? '';
+      _price.text = asset.purchasePrice?.toStringAsFixed(0) ?? '';
+      _notes.text = asset.notes ?? '';
+      _purchaseDate = asset.purchaseDate;
+      _warrantyEnd = asset.warrantyEndDate;
+      _showDetails = true;
+    });
+  }
 
   Future<void> _scanInvoice({required bool fromCamera}) async {
     if (_scanning) return;
@@ -120,21 +152,21 @@ class _AddAssetScreenState extends ConsumerState<AddAssetScreen> {
       final repo = ref.read(assetRepositoryProvider);
       final hadAssets = await repo.countActiveAssets() > 0;
 
-      final asset = await repo.addAsset(
-            AssetDraft(
-              name: name,
-              category: _category,
-              brand: _brand.text,
-              model: _model.text,
-              serialNumber: _serial.text,
-              vendor: _vendor.text,
-              purchaseDate: _purchaseDate,
-              purchasePrice: double.tryParse(_price.text.trim()),
-              warrantyEndDate: _warrantyEnd,
-              notes: _notes.text,
-            ),
-            homeId: home.id,
-          );
+      final draft = AssetDraft(
+        name: name,
+        category: _category,
+        brand: _brand.text,
+        model: _model.text,
+        serialNumber: _serial.text,
+        vendor: _vendor.text,
+        purchaseDate: _purchaseDate,
+        purchasePrice: double.tryParse(_price.text.trim()),
+        warrantyEndDate: _warrantyEnd,
+        notes: _notes.text,
+      );
+      final asset = _isEdit
+          ? await repo.updateAsset(widget.assetId!, draft)
+          : await repo.addAsset(draft, homeId: home.id);
 
       final invoice = _invoice;
       if (invoice != null) {
@@ -150,8 +182,9 @@ class _AddAssetScreenState extends ConsumerState<AddAssetScreen> {
       }
 
       final analytics = ref.read(analyticsProvider);
-      analytics.logEvent('asset_added', {'category': _category});
-      if (!hadAssets) {
+      analytics.logEvent(_isEdit ? 'asset_edited' : 'asset_added',
+          {'category': _category});
+      if (!hadAssets && !_isEdit) {
         analytics.logEvent(AnalyticsEvents.firstAssetAdded);
       }
       if (_warrantyEnd != null) {
@@ -182,7 +215,7 @@ class _AddAssetScreenState extends ConsumerState<AddAssetScreen> {
   Widget build(BuildContext context) {
     final dateFormat = DateFormat('d MMM yyyy');
     return Scaffold(
-      appBar: AppBar(title: const Text('Add asset')),
+      appBar: AppBar(title: Text(_isEdit ? 'Edit asset' : 'Add asset')),
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.all(AppSpacing.md),

@@ -183,14 +183,18 @@ class ReminderRepository {
 
   /// Cancels all open reminders for a source record (e.g. a deleted asset)
   /// including their scheduled notifications.
-  Future<void> cancelForSource(String sourceType, String sourceId) async {
+  Future<void> cancelForSource(String sourceType, String sourceId,
+      {String? titlePrefix}) async {
     final now = DateTime.now();
     final rows = await (_db.select(_db.reminders)
           ..where((t) =>
               t.sourceType.equals(sourceType) &
               t.sourceId.equals(sourceId) &
               t.state.isIn(_openStates)))
-        .get();
+        .get()
+        .then((rows) => titlePrefix == null
+            ? rows
+            : rows.where((r) => r.title.startsWith(titlePrefix)).toList());
     for (final r in rows) {
       await _db.upsertWithOutbox(
         _db.reminders,

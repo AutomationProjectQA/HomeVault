@@ -29,6 +29,8 @@ abstract final class Routes {
   static const family = '/family';
 
   static String assetDetail(String id) => '/assets/$id';
+  static String editAsset(String id) => '/assets/$id/edit';
+  static String editBill(String id) => '/bills/$id/edit';
 }
 
 final routerProvider = Provider<GoRouter>((ref) {
@@ -94,6 +96,13 @@ final routerProvider = Provider<GoRouter>((ref) {
                   path: ':id',
                   builder: (context, state) => AssetDetailScreen(
                       assetId: state.pathParameters['id']!),
+                  routes: [
+                    GoRoute(
+                      path: 'edit',
+                      builder: (context, state) => AddAssetScreen(
+                          assetId: state.pathParameters['id']),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -106,6 +115,11 @@ final routerProvider = Provider<GoRouter>((ref) {
                 GoRoute(
                   path: 'add',
                   builder: (context, state) => const AddBillScreen(),
+                ),
+                GoRoute(
+                  path: ':id/edit',
+                  builder: (context, state) =>
+                      AddBillScreen(billId: state.pathParameters['id']),
                 ),
               ],
             ),
