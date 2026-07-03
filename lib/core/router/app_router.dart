@@ -9,6 +9,7 @@ import '../../features/assets/assets_list_screen.dart';
 import '../../features/bills/add_bill_screen.dart';
 import '../../features/bills/bills_screen.dart';
 import '../../features/dashboard/dashboard_screen.dart';
+import '../../features/family/family_screen.dart';
 import '../../features/onboarding/create_home_screen.dart';
 import '../../features/onboarding/welcome_screen.dart';
 import '../../features/settings/privacy_policy_screen.dart';
@@ -25,6 +26,7 @@ abstract final class Routes {
   static const welcome = '/welcome';
   static const createHome = '/welcome/create-home';
   static const privacy = '/privacy';
+  static const family = '/family';
 
   static String assetDetail(String id) => '/assets/$id';
 }
@@ -61,6 +63,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: Routes.privacy,
         builder: (context, state) => const PrivacyPolicyScreen(),
+      ),
+      GoRoute(
+        path: Routes.family,
+        builder: (context, state) => const FamilyScreen(),
       ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) =>

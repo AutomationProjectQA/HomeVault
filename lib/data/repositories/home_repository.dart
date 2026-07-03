@@ -20,6 +20,13 @@ class HomeRepository {
     return query.watchSingleOrNull();
   }
 
+  Stream<List<Member>> watchMembers(String homeId) {
+    final query = _db.select(_db.members)
+      ..where((t) => t.homeId.equals(homeId) & t.removedAt.isNull())
+      ..orderBy([(t) => OrderingTerm.asc(t.joinedAt)]);
+    return query.watch();
+  }
+
   Future<Home> createHome({required String name, String? address}) async {
     final user = await _auth.currentUser();
     final now = DateTime.now();
@@ -68,4 +75,8 @@ final homeRepositoryProvider = Provider<HomeRepository>((ref) {
 
 final currentHomeProvider = StreamProvider<Home?>((ref) {
   return ref.watch(homeRepositoryProvider).watchCurrentHome();
+});
+
+final membersProvider = StreamProvider.family<List<Member>, String>((ref, homeId) {
+  return ref.watch(homeRepositoryProvider).watchMembers(homeId);
 });

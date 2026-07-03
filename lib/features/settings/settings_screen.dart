@@ -56,6 +56,13 @@ class SettingsScreen extends ConsumerWidget {
           ),
           const Divider(),
           ListTile(
+            leading: const Icon(Icons.family_restroom_outlined),
+            title: const Text('Family'),
+            subtitle: const Text('Who shares this home'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => context.push(Routes.family),
+          ),
+          ListTile(
             leading: const Icon(Icons.privacy_tip_outlined),
             title: const Text('Privacy'),
             subtitle: const Text('How your data is handled'),
