@@ -50,6 +50,24 @@ void main() {
     });
   });
 
+  group('quiet hours', () {
+    test('no notification time ever lands between 21:00 and 08:00', () {
+      for (final priority in ['critical', 'medium', 'low']) {
+        for (var offset = -10; offset <= 40; offset += 3) {
+          final times = notificationTimesFor(
+            dueAt: DateTime(2026, 7, 1, 23, 30).add(Duration(days: offset)),
+            priority: priority,
+            now: now,
+          );
+          for (final t in times) {
+            expect(t.hour >= quietEndHour && t.hour < quietStartHour, isTrue,
+                reason: '$priority scheduled at $t');
+          }
+        }
+      }
+    });
+  });
+
   group('medium chain', () {
     test('30d/7d/due-day, then weekly', () {
       final times = notificationTimesFor(

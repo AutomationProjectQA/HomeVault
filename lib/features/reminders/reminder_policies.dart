@@ -97,6 +97,22 @@ List<DateTime> notificationTimesFor({
     }
   }
 
-  final future = times.where((t) => t.isAfter(now)).toList()..sort();
+  final clamped = times.map(_clampToWakingHours).toSet().toList();
+  final future = clamped.where((t) => t.isAfter(now)).toList()..sort();
   return future.take(maxScheduledPerReminder).toList();
+}
+
+/// Quiet hours: nothing fires 21:00–08:00. Late-evening times pull back to
+/// 20:00 same day; small-hours times move to 09:00 that morning.
+const quietStartHour = 21;
+const quietEndHour = 8;
+
+DateTime _clampToWakingHours(DateTime t) {
+  if (t.hour >= quietStartHour) {
+    return DateTime(t.year, t.month, t.day, 20);
+  }
+  if (t.hour < quietEndHour) {
+    return DateTime(t.year, t.month, t.day, defaultNotifyHour);
+  }
+  return t;
 }
