@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../core/router/app_router.dart';
 import '../../core/theme/tokens.dart';
 
 /// Quick-add bottom sheet: Asset / Bill / Service.
@@ -33,20 +35,31 @@ class QuickAddSheet extends StatelessWidget {
             _AddOption(
               icon: Icons.tv_outlined,
               title: 'Appliance / Asset',
-              subtitle: 'Snap the invoice — we fill the details',
-              onTap: () => Navigator.pop(context), // → asset flow (Sprint 2)
+              subtitle: 'Track warranty, services, and papers',
+              onTap: () {
+                Navigator.pop(context);
+                context.push(Routes.addAsset);
+              },
             ),
             _AddOption(
               icon: Icons.receipt_long_outlined,
               title: 'Bill',
               subtitle: 'Electricity, gas, internet, society…',
-              onTap: () => Navigator.pop(context), // → bill flow (Sprint 4)
+              onTap: () {
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                    content: Text('Bills arrive in Sprint 4')));
+              },
             ),
             _AddOption(
               icon: Icons.build_outlined,
               title: 'Service / Maintenance',
               subtitle: 'Log a service, set the next reminder',
-              onTap: () => Navigator.pop(context), // → service flow (Sprint 4)
+              onTap: () {
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                    content: Text('Service logs arrive in Sprint 4')));
+              },
             ),
           ],
         ),

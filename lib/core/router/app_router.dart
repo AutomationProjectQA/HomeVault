@@ -3,17 +3,26 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../data/repositories/home_repository.dart';
+import '../../features/assets/add_asset_screen.dart';
+import '../../features/assets/asset_detail_screen.dart';
+import '../../features/assets/assets_list_screen.dart';
 import '../../features/dashboard/dashboard_screen.dart';
 import '../../features/onboarding/create_home_screen.dart';
 import '../../features/onboarding/welcome_screen.dart';
+import '../../features/settings/privacy_policy_screen.dart';
 import '../../features/settings/settings_screen.dart';
 import '../../features/shell/app_shell.dart';
 
 abstract final class Routes {
   static const dashboard = '/';
+  static const assets = '/assets';
+  static const addAsset = '/assets/add';
   static const settings = '/settings';
   static const welcome = '/welcome';
   static const createHome = '/welcome/create-home';
+  static const privacy = '/privacy';
+
+  static String assetDetail(String id) => '/assets/$id';
 }
 
 final routerProvider = Provider<GoRouter>((ref) {
@@ -26,9 +35,11 @@ final routerProvider = Provider<GoRouter>((ref) {
       if (homeAsync.isLoading) return null;
 
       final hasHome = homeAsync.value != null;
-      final inOnboarding = state.matchedLocation.startsWith(Routes.welcome);
+      final location = state.matchedLocation;
+      final inOnboarding = location.startsWith(Routes.welcome);
+      final isNeutral = location == Routes.privacy;
 
-      if (!hasHome && !inOnboarding) return Routes.welcome;
+      if (!hasHome && !inOnboarding && !isNeutral) return Routes.welcome;
       if (hasHome && inOnboarding) return Routes.dashboard;
       return null;
     },
@@ -43,6 +54,10 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
         ],
       ),
+      GoRoute(
+        path: Routes.privacy,
+        builder: (context, state) => const PrivacyPolicyScreen(),
+      ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) =>
             AppShell(navigationShell: navigationShell),
@@ -53,6 +68,24 @@ final routerProvider = Provider<GoRouter>((ref) {
               builder: (context, state) => homeAsync.isLoading
                   ? const _Splash()
                   : const DashboardScreen(),
+            ),
+          ]),
+          StatefulShellBranch(routes: [
+            GoRoute(
+              path: Routes.assets,
+              builder: (context, state) => const AssetsListScreen(),
+              routes: [
+                GoRoute(
+                  path: 'add',
+                  parentNavigatorKey: null,
+                  builder: (context, state) => const AddAssetScreen(),
+                ),
+                GoRoute(
+                  path: ':id',
+                  builder: (context, state) => AssetDetailScreen(
+                      assetId: state.pathParameters['id']!),
+                ),
+              ],
             ),
           ]),
           StatefulShellBranch(routes: [

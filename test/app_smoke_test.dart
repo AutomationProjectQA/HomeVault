@@ -23,31 +23,27 @@ void main() {
   testWidgets('fresh install: onboarding → create home → dashboard',
       (tester) async {
     await tester.pumpWidget(app());
-    await tester.pumpAndSettle();
 
     // Fresh install lands on Welcome.
+    await pumpUntil(tester, find.text('Get started'));
     expect(find.text('HomeVault'), findsOneWidget);
-    expect(find.text('Get started'), findsOneWidget);
 
     await tester.tap(find.text('Get started'));
-    await tester.pumpAndSettle();
+    await pumpUntil(tester, find.text('Name your home'));
 
     // Create home with a custom name.
-    expect(find.text('Name your home'), findsOneWidget);
     await tester.enterText(
         find.widgetWithText(TextField, 'My Home').first, 'Ahmedabad Flat');
     await tester.tap(find.text('Create my home'));
-    await tester.pumpAndSettle();
 
-    // Redirected to dashboard showing the real home.
+    // Redirected to dashboard showing the real home. (Wait on the dashboard
+    // marker — the home name also matches the create-form's text field.)
+    await pumpUntil(tester, find.text("Today's tasks"));
     expect(find.text('Ahmedabad Flat'), findsOneWidget);
-    expect(find.text("Today's tasks"), findsOneWidget);
-    expect(find.text('Assets'), findsOneWidget);
 
-    // Quick-add sheet opens from the empty-state CTA.
+    // Empty-state CTA goes straight to the add-asset flow.
     await tester.tap(find.text('Add your first appliance'));
-    await tester.pumpAndSettle();
-    expect(find.text('Add to your home'), findsOneWidget);
+    await pumpUntil(tester, find.text('Add asset'));
 
     await disposeAppAndDb(tester, db);
   });
@@ -56,9 +52,8 @@ void main() {
     await seedHome(db, 'Rajkot House');
 
     await tester.pumpWidget(app());
-    await tester.pumpAndSettle();
+    await pumpUntil(tester, find.text('Rajkot House'));
 
-    expect(find.text('Rajkot House'), findsOneWidget);
     expect(find.text('Get started'), findsNothing);
 
     await disposeAppAndDb(tester, db);

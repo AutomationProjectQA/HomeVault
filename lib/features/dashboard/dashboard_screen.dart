@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../core/router/app_router.dart';
 import '../../core/theme/tokens.dart';
 import '../../data/repositories/home_repository.dart';
-import '../add/quick_add_sheet.dart';
 import 'dashboard_providers.dart';
 
 /// Dashboard v1 (Sprint 1): live home + stats from Drift streams.
@@ -163,7 +164,7 @@ class _EmptyTasksCard extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.md),
           FilledButton.icon(
-            onPressed: () => QuickAddSheet.show(context),
+            onPressed: () => context.push(Routes.addAsset),
             icon: const Icon(Icons.add),
             label: const Text('Add your first appliance'),
           ),

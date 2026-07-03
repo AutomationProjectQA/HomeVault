@@ -62,6 +62,11 @@ class WelcomeScreen extends ConsumerWidget {
                 style: textTheme.bodySmall
                     ?.copyWith(color: AppColors.textSecondary),
               ),
+              TextButton(
+                onPressed: () => context.push(Routes.privacy),
+                child: const Text('How we handle your data',
+                    style: TextStyle(fontSize: 12)),
+              ),
             ],
           ),
         ),

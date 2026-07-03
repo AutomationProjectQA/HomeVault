@@ -1,6 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'settings_service.dart';
+
 /// Analytics boundary. Debug logger until Firebase Analytics is wired
 /// (story 0.3/1.6); event names are stable from day one so funnels built in
 /// the console keep working when the backend swaps in.
@@ -27,6 +29,12 @@ class DebugAnalyticsService implements AnalyticsService {
   }
 }
 
+class NoopAnalyticsService implements AnalyticsService {
+  @override
+  void logEvent(String name, [Map<String, Object?> params = const {}]) {}
+}
+
 final analyticsProvider = Provider<AnalyticsService>((ref) {
-  return DebugAnalyticsService();
+  final enabled = ref.watch(analyticsEnabledProvider).value ?? true;
+  return enabled ? DebugAnalyticsService() : NoopAnalyticsService();
 });

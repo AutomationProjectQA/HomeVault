@@ -15,6 +15,44 @@ class FakeAuthService implements AuthService {
 AppDatabase newTestDatabase() =>
     AppDatabase.forTesting(NativeDatabase.memory());
 
+/// Pumps until [finder] matches, or fails after [maxPumps] frames.
+/// Prefer this over pumpAndSettle: screens with indeterminate spinners or
+/// long-lived animations never "settle", but they do reach target states.
+Future<void> pumpUntil(
+  WidgetTester tester,
+  Finder finder, {
+  Duration step = const Duration(milliseconds: 100),
+  int maxPumps = 100,
+}) async {
+  for (var i = 0; i < maxPumps; i++) {
+    if (finder.evaluate().isNotEmpty) return;
+    await tester.pump(step);
+  }
+  final visible = tester.allWidgets
+      .whereType<Text>()
+      .map((t) => t.data)
+      .whereType<String>()
+      .take(40)
+      .toList();
+  fail('pumpUntil: $finder still absent after $maxPumps pumps.\n'
+      'Visible texts: $visible');
+}
+
+/// Pumps until [finder] matches nothing (e.g. a route finishes its exit
+/// transition), or fails after [maxPumps] frames.
+Future<void> pumpUntilGone(
+  WidgetTester tester,
+  Finder finder, {
+  Duration step = const Duration(milliseconds: 100),
+  int maxPumps = 100,
+}) async {
+  for (var i = 0; i < maxPumps; i++) {
+    if (finder.evaluate().isEmpty) return;
+    await tester.pump(step);
+  }
+  fail('pumpUntilGone: $finder still present after $maxPumps pumps');
+}
+
 /// Widget-test teardown for tests that touch the database.
 ///
 /// Drift keeps stream-query eviction timers alive briefly after listeners
