@@ -4,7 +4,10 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/config/app_env.dart';
 import '../../core/router/app_router.dart';
+import 'package:share_plus/share_plus.dart';
+
 import '../../core/services/app_lock_service.dart';
+import '../../core/services/export_service.dart';
 import '../../core/services/settings_service.dart';
 import '../../core/theme/tokens.dart';
 
@@ -75,11 +78,19 @@ class SettingsScreen extends ConsumerWidget {
             subtitle: Text('Reminder times, quiet hours — coming in Sprint 3'),
             enabled: false,
           ),
-          const ListTile(
-            leading: Icon(Icons.download_outlined),
-            title: Text('Export my data'),
-            subtitle: Text('Coming with backup — Phase 3'),
-            enabled: false,
+          ListTile(
+            leading: const Icon(Icons.download_outlined),
+            title: const Text('Export my data'),
+            subtitle: const Text('Everything as JSON — yours to keep'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () async {
+              final json =
+                  await ref.read(exportServiceProvider).buildExportJson();
+              await SharePlus.instance.share(ShareParams(
+                text: json,
+                subject: 'HomeVault export',
+              ));
+            },
           ),
           const Divider(),
           ListTile(
