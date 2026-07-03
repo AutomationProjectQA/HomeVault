@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 
 import '../../core/router/app_router.dart';
 import '../../core/theme/tokens.dart';
 import '../../data/repositories/home_repository.dart';
+import '../../data/repositories/reminder_repository.dart';
 import '../reminders/today_tasks.dart';
 import 'dashboard_providers.dart';
 
@@ -28,6 +30,7 @@ class DashboardScreen extends StatelessWidget {
             SizedBox(height: AppSpacing.sm),
             TodayTasksList(emptyState: _EmptyTasksCard()),
             SizedBox(height: AppSpacing.lg),
+            _UpcomingSection(),
             _SectionTitle('Your home'),
             SizedBox(height: AppSpacing.sm),
             _StatsStrip(),
@@ -171,6 +174,47 @@ class _EmptyTasksCard extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _UpcomingSection extends ConsumerWidget {
+  const _UpcomingSection();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final upcoming = ref.watch(upcomingTasksProvider).value ?? const [];
+    if (upcoming.isEmpty) return const SizedBox.shrink();
+
+    final dateFormat = DateFormat('EEE, d MMM');
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const _SectionTitle('Next 7 days'),
+        const SizedBox(height: AppSpacing.sm),
+        for (final task in upcoming.take(3))
+          Padding(
+            padding: const EdgeInsets.only(bottom: AppSpacing.xs),
+            child: Row(
+              children: [
+                const Icon(Icons.circle,
+                    size: 8, color: AppColors.statusUpcoming),
+                const SizedBox(width: AppSpacing.sm),
+                Expanded(
+                    child: Text(task.title,
+                        maxLines: 1, overflow: TextOverflow.ellipsis)),
+                Text(dateFormat.format(task.dueAt),
+                    style: const TextStyle(
+                        fontSize: 12, color: AppColors.textSecondary)),
+              ],
+            ),
+          ),
+        if (upcoming.length > 3)
+          Text('+ ${upcoming.length - 3} more',
+              style: const TextStyle(
+                  fontSize: 12, color: AppColors.textSecondary)),
+        const SizedBox(height: AppSpacing.lg),
+      ],
     );
   }
 }

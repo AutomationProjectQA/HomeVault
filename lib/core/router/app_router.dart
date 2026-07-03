@@ -6,6 +6,8 @@ import '../../data/repositories/home_repository.dart';
 import '../../features/assets/add_asset_screen.dart';
 import '../../features/assets/asset_detail_screen.dart';
 import '../../features/assets/assets_list_screen.dart';
+import '../../features/bills/add_bill_screen.dart';
+import '../../features/bills/bills_screen.dart';
 import '../../features/dashboard/dashboard_screen.dart';
 import '../../features/onboarding/create_home_screen.dart';
 import '../../features/onboarding/welcome_screen.dart';
@@ -17,6 +19,8 @@ abstract final class Routes {
   static const dashboard = '/';
   static const assets = '/assets';
   static const addAsset = '/assets/add';
+  static const bills = '/bills';
+  static const addBill = '/bills/add';
   static const settings = '/settings';
   static const welcome = '/welcome';
   static const createHome = '/welcome/create-home';
@@ -84,6 +88,18 @@ final routerProvider = Provider<GoRouter>((ref) {
                   path: ':id',
                   builder: (context, state) => AssetDetailScreen(
                       assetId: state.pathParameters['id']!),
+                ),
+              ],
+            ),
+          ]),
+          StatefulShellBranch(routes: [
+            GoRoute(
+              path: Routes.bills,
+              builder: (context, state) => const BillsScreen(),
+              routes: [
+                GoRoute(
+                  path: 'add',
+                  builder: (context, state) => const AddBillScreen(),
                 ),
               ],
             ),

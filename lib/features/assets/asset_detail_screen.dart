@@ -7,6 +7,7 @@ import '../../core/theme/tokens.dart';
 import '../../data/local/database.dart';
 import '../../data/repositories/asset_repository.dart';
 import '../../data/repositories/document_repository.dart';
+import '../maintenance/log_service_sheet.dart';
 import 'asset_categories.dart';
 import 'warranty_status.dart';
 
@@ -61,6 +62,12 @@ class AssetDetailScreen extends ConsumerWidget {
             onPressed: () => _confirmDelete(context, ref, asset),
           ),
         ],
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        heroTag: 'log_service',
+        onPressed: () => LogServiceSheet.show(context, asset),
+        icon: const Icon(Icons.build_outlined),
+        label: const Text('Log service'),
       ),
       body: ListView(
         padding: const EdgeInsets.all(AppSpacing.md),

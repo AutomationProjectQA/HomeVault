@@ -168,6 +168,19 @@ class ReminderRepository {
     return rows.length;
   }
 
+  /// Completes all open reminders for a source (e.g. a bill that was paid).
+  Future<void> completeForSource(String sourceType, String sourceId) async {
+    final rows = await (_db.select(_db.reminders)
+          ..where((t) =>
+              t.sourceType.equals(sourceType) &
+              t.sourceId.equals(sourceId) &
+              t.state.isIn(_openStates)))
+        .get();
+    for (final r in rows) {
+      await complete(r.id);
+    }
+  }
+
   /// Cancels all open reminders for a source record (e.g. a deleted asset)
   /// including their scheduled notifications.
   Future<void> cancelForSource(String sourceType, String sourceId) async {

@@ -140,6 +140,54 @@ class AssetRepository {
         .getSingle();
   }
 
+  /// Logs a completed service on the asset timeline; optionally sets the
+  /// next service due as a recurring medium reminder (story 4.5).
+  Future<void> logService({
+    required String homeId,
+    required String assetId,
+    required String assetName,
+    required String title,
+    required DateTime serviceDate,
+    double? cost,
+    String? providerName,
+    String? providerPhone,
+    DateTime? nextDue,
+    String? recurrenceRule,
+  }) async {
+    final user = await _auth.currentUser();
+    final now = DateTime.now();
+    final eventId = const Uuid().v4();
+    await _db.upsertWithOutbox(
+      _db.events,
+      EventsCompanion.insert(
+        id: eventId,
+        homeId: homeId,
+        createdBy: user.id,
+        createdAt: now,
+        updatedAt: now,
+        assetId: Value(assetId),
+        type: 'service',
+        title: title,
+        occurredAt: serviceDate,
+        cost: Value.absentIfNull(cost),
+        providerName: Value.absentIfNull(providerName?.trim()),
+        providerPhone: Value.absentIfNull(providerPhone?.trim()),
+      ),
+      entityId: eventId,
+    );
+    if (nextDue != null) {
+      await _reminders.create(
+        homeId: homeId,
+        sourceType: 'asset',
+        sourceId: assetId,
+        title: 'Service due: $assetName',
+        priority: 'medium',
+        dueAt: nextDue,
+        recurrenceRule: recurrenceRule,
+      );
+    }
+  }
+
   /// Soft delete; cancels the asset's pending reminders so ghosts of removed
   /// appliances never fire notifications.
   Future<void> deleteAsset(String id) async {

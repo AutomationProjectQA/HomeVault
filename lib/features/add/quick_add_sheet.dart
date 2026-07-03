@@ -47,18 +47,19 @@ class QuickAddSheet extends StatelessWidget {
               subtitle: 'Electricity, gas, internet, society…',
               onTap: () {
                 Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                    content: Text('Bills arrive in Sprint 4')));
+                context.push(Routes.addBill);
               },
             ),
             _AddOption(
               icon: Icons.build_outlined,
               title: 'Service / Maintenance',
-              subtitle: 'Log a service, set the next reminder',
+              subtitle: 'Log a service from the asset\'s page',
               onTap: () {
                 Navigator.pop(context);
+                context.go(Routes.assets);
                 ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                    content: Text('Service logs arrive in Sprint 4')));
+                    content:
+                        Text('Open an asset and tap "Log service".')));
               },
             ),
           ],
