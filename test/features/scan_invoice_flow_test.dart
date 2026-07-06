@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:homevault/core/services/attachment_service.dart';
 import 'package:homevault/core/services/auth_service.dart';
+import 'package:homevault/core/services/notifications/notification_scheduler.dart';
 import 'package:homevault/core/services/ocr/ocr_service.dart';
 import 'package:homevault/data/local/database.dart';
 import 'package:homevault/main.dart';
@@ -48,21 +49,27 @@ void main() {
     );
   });
 
-  testWidgets('scan invoice pre-fills fields and attaches document',
-      (tester) async {
+  testWidgets('scan invoice pre-fills fields and attaches document', (
+    tester,
+  ) async {
     // Tall phone-shaped surface so the whole form stays mounted.
     await tester.binding.setSurfaceSize(const Size(420, 1400));
     addTearDown(() => tester.binding.setSurfaceSize(null));
 
-    await tester.pumpWidget(ProviderScope(
-      overrides: [
-        databaseProvider.overrideWithValue(db),
-        authServiceProvider.overrideWithValue(const FakeAuthService()),
-        attachmentPickerProvider.overrideWithValue(FakePicker()),
-        ocrServiceProvider.overrideWithValue(FakeOcr()),
-      ],
-      child: const HomeVaultApp(),
-    ));
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          databaseProvider.overrideWithValue(db),
+          authServiceProvider.overrideWithValue(const FakeAuthService()),
+          notificationSchedulerProvider.overrideWithValue(
+            NoopNotificationScheduler(),
+          ),
+          attachmentPickerProvider.overrideWithValue(FakePicker()),
+          ocrServiceProvider.overrideWithValue(FakeOcr()),
+        ],
+        child: const HomeVaultApp(),
+      ),
+    );
     await pumpUntil(tester, find.text('Add your first appliance'));
     await tester.tap(find.text('Add your first appliance'));
     await pumpUntil(tester, find.text('Scan invoice'));
@@ -76,7 +83,9 @@ void main() {
 
     // Name it and save.
     await tester.enterText(
-        find.widgetWithText(TextField, 'Name'), 'Samsung TV');
+      find.widgetWithText(TextField, 'Name'),
+      'Samsung TV',
+    );
     await tester.tap(find.text('Save asset'));
     await pumpUntilGone(tester, find.text('Save asset'));
 

@@ -12,6 +12,9 @@ abstract interface class NotificationScheduler {
   /// Returns whether notifications are permitted afterwards.
   Future<bool> requestPermissions();
 
+  /// Whether the OS will currently deliver our notifications.
+  Future<bool> areEnabled();
+
   /// Replaces all scheduled notifications for [reminderId] with [times].
   Future<void> scheduleChain({
     required String reminderId,
@@ -30,6 +33,9 @@ class NoopNotificationScheduler implements NotificationScheduler {
 
   @override
   Future<bool> requestPermissions() async => false;
+
+  @override
+  Future<bool> areEnabled() async => true; // nothing to enable here
 
   @override
   Future<void> scheduleChain({

@@ -73,6 +73,18 @@ class LocalNotificationScheduler implements NotificationScheduler {
         false;
   }
 
+  @override
+  Future<bool> areEnabled() async {
+    await initialize();
+    if (!_available) return true; // no platform → nothing to warn about
+    final android = _plugin.resolvePlatformSpecificImplementation<
+        AndroidFlutterLocalNotificationsPlugin>();
+    if (android != null) {
+      return await android.areNotificationsEnabled() ?? false;
+    }
+    return true; // iOS: checked at request time
+  }
+
   int _baseId(String reminderId) =>
       (reminderId.hashCode & 0x7fffffff) % 2000000 * maxScheduledPerReminder;
 

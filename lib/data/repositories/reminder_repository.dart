@@ -40,6 +40,15 @@ class ReminderRepository {
         .toList());
   }
 
+  /// Whether any open reminder exists (one-shot query, no stream).
+  Future<bool> hasOpenReminders() async {
+    final row = await (_db.select(_db.reminders)
+          ..where((t) => t.deletedAt.isNull() & t.state.isIn(_openStates))
+          ..limit(1))
+        .get();
+    return row.isNotEmpty;
+  }
+
   /// Snoozed tasks that haven't woken yet — visible so "remind me later"
   /// never means "gone".
   Stream<List<Reminder>> watchSnoozed() {
@@ -298,11 +307,23 @@ final reminderRepositoryProvider = Provider<ReminderRepository>((ref) {
 });
 
 /// One-shot engine bootstrap at app start: marks overdue, re-schedules all
-/// chains (covers reboot, app update, and OEM-killed alarms).
+/// chains (covers reboot, app update, and OEM-killed alarms), and asks for
+/// notification permission in context — only once reminders actually exist.
 final reminderEngineBootstrapProvider = FutureProvider<void>((ref) async {
   final repo = ref.watch(reminderRepositoryProvider);
   await repo.sweepOverdue();
   await repo.rescheduleAll();
+
+  final scheduler = ref.read(notificationSchedulerProvider);
+  if (await repo.hasOpenReminders() && !await scheduler.areEnabled()) {
+    await scheduler.requestPermissions();
+    ref.invalidate(notificationsEnabledProvider);
+  }
+});
+
+/// Drives the "reminders are muted" banner on the dashboard.
+final notificationsEnabledProvider = FutureProvider<bool>((ref) {
+  return ref.watch(notificationSchedulerProvider).areEnabled();
 });
 
 final todayTasksProvider = StreamProvider<List<Reminder>>((ref) {

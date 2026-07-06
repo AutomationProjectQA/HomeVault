@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:homevault/core/services/auth_service.dart';
+import 'package:homevault/core/services/notifications/notification_scheduler.dart';
 import 'package:homevault/data/local/database.dart';
 import 'package:homevault/main.dart';
 
@@ -16,6 +17,8 @@ void main() {
         overrides: [
           databaseProvider.overrideWithValue(db),
           authServiceProvider.overrideWithValue(const FakeAuthService()),
+          notificationSchedulerProvider
+              .overrideWithValue(NoopNotificationScheduler()),
         ],
         child: const HomeVaultApp(),
       );

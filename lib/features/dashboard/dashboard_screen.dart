@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/router/app_router.dart';
+import '../../core/services/notifications/notification_scheduler.dart';
 import '../../core/theme/tokens.dart';
 import '../../data/repositories/home_repository.dart';
 import '../../data/repositories/reminder_repository.dart';
@@ -25,6 +26,7 @@ class DashboardScreen extends StatelessWidget {
           children: const [
             _Header(),
             SizedBox(height: AppSpacing.lg),
+            _NotificationsMutedBanner(),
             _HealthCard(),
             SizedBox(height: AppSpacing.lg),
             _SectionTitle("Today's tasks"),
@@ -61,6 +63,61 @@ class _Header extends ConsumerWidget {
             style: textTheme.bodyMedium
                 ?.copyWith(color: AppColors.textSecondary)),
       ],
+    );
+  }
+}
+
+/// Reminders that can't reach the user are the product failing silently —
+/// surface it loudly with a one-tap fix.
+class _NotificationsMutedBanner extends ConsumerWidget {
+  const _NotificationsMutedBanner();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final enabled = ref.watch(notificationsEnabledProvider).value ?? true;
+    if (enabled) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.md),
+      child: Container(
+        padding: const EdgeInsets.all(AppSpacing.md),
+        decoration: BoxDecoration(
+          color: AppColors.statusWarning.withValues(alpha: 0.1),
+          borderRadius: AppRadius.card,
+          border:
+              Border.all(color: AppColors.statusWarning.withValues(alpha: 0.4)),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.notifications_off_outlined,
+                color: AppColors.statusWarning),
+            const SizedBox(width: AppSpacing.md),
+            const Expanded(
+              child: Text(
+                'Notifications are off — reminders can\'t reach you.',
+                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+              ),
+            ),
+            TextButton(
+              onPressed: () async {
+                final granted = await ref
+                    .read(notificationSchedulerProvider)
+                    .requestPermissions();
+                if (granted) {
+                  await ref.read(reminderRepositoryProvider).rescheduleAll();
+                }
+                ref.invalidate(notificationsEnabledProvider);
+                if (context.mounted && !granted) {
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                      content: Text(
+                          'Please allow HomeVault notifications in system settings.')));
+                }
+              },
+              child: const Text('Enable'),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

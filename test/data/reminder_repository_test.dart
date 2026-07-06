@@ -17,6 +17,9 @@ class RecordingScheduler implements NotificationScheduler {
   Future<bool> requestPermissions() async => true;
 
   @override
+  Future<bool> areEnabled() async => true;
+
+  @override
   Future<void> scheduleChain({
     required String reminderId,
     required String title,
