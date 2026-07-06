@@ -105,71 +105,106 @@ class _BillCard extends ConsumerWidget {
     final overdue = !paid && bill.dueDate.isBefore(DateTime.now());
     final dateFormat = DateFormat('d MMM');
 
+    final statusColor = paid
+        ? AppColors.statusDone
+        : overdue
+            ? AppColors.statusCritical
+            : scheme.primary;
+
     return DecoratedBox(
       decoration: BoxDecoration(
           borderRadius: AppRadius.card, boxShadow: AppElevation.soft),
       child: Material(
         color: scheme.surface,
         borderRadius: AppRadius.card,
-        child: ListTile(
+        child: InkWell(
+          borderRadius: AppRadius.card,
           onTap: paid ? null : () => context.push(Routes.editBill(bill.id)),
-          shape: RoundedRectangleBorder(borderRadius: AppRadius.card),
-          leading: CircleAvatar(
-            backgroundColor: (paid
-                    ? AppColors.statusDone
-                    : overdue
-                        ? AppColors.statusCritical
-                        : scheme.primary)
-                .withValues(alpha: 0.1),
-            child: Icon(type.icon,
-                color: paid
-                    ? AppColors.statusDone
-                    : overdue
-                        ? AppColors.statusCritical
-                        : scheme.primary),
-          ),
-          title: Text(
-            bill.provider == null
-                ? type.label
-                : '${type.label} · ${bill.provider}',
-            style: TextStyle(
-              fontWeight: FontWeight.w600,
-              decoration: paid ? TextDecoration.lineThrough : null,
-            ),
-          ),
-          subtitle: Text(
-            paid
-                ? 'Paid ${dateFormat.format(bill.paidDate ?? bill.dueDate)}'
-                : (overdue ? 'Overdue since ' : 'Due ') +
-                    dateFormat.format(bill.dueDate),
-            style: TextStyle(
-              color: overdue ? AppColors.statusCritical : null,
-              fontWeight: overdue ? FontWeight.w600 : null,
-            ),
-          ),
-          trailing: paid
-              ? Text(
-                  bill.amount == null
-                      ? ''
-                      : '₹${bill.amount!.toStringAsFixed(0)}',
-                  style: const TextStyle(color: AppColors.textSecondary))
-              : FilledButton.tonal(
-                  onPressed: () async {
-                    final next =
-                        await ref.read(billRepositoryProvider).markPaid(bill.id);
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                        content: Text(next == null
-                            ? 'Marked paid'
-                            : 'Paid. Next bill created for ${DateFormat('d MMM').format(next.dueDate)}.'),
-                        duration: const Duration(seconds: 2),
-                      ));
-                    }
-                  },
-                  child: Text(bill.amount == null
-                      ? 'Paid'
-                      : 'Paid ₹${bill.amount!.toStringAsFixed(0)}'),
+          child: Padding(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            child: Row(
+              children: [
+                CircleAvatar(
+                  backgroundColor: statusColor.withValues(alpha: 0.1),
+                  child: Icon(type.icon, color: statusColor),
                 ),
+                const SizedBox(width: AppSpacing.md),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        bill.provider == null
+                            ? type.label
+                            : '${type.label} · ${bill.provider}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          decoration:
+                              paid ? TextDecoration.lineThrough : null,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        paid
+                            ? 'Paid ${dateFormat.format(bill.paidDate ?? bill.dueDate)}'
+                            : (overdue ? 'Overdue since ' : 'Due ') +
+                                dateFormat.format(bill.dueDate),
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: overdue
+                              ? AppColors.statusCritical
+                              : AppColors.textSecondary,
+                          fontWeight: overdue ? FontWeight.w600 : null,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.sm),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    if (bill.amount != null)
+                      Text('₹${bill.amount!.toStringAsFixed(0)}',
+                          style: const TextStyle(
+                              fontWeight: FontWeight.w700, fontSize: 15)),
+                    if (!paid) ...[
+                      const SizedBox(height: AppSpacing.xs),
+                      SizedBox(
+                        height: 32,
+                        child: FilledButton.tonal(
+                          style: FilledButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: AppSpacing.md),
+                              minimumSize: Size.zero,
+                              tapTargetSize:
+                                  MaterialTapTargetSize.shrinkWrap),
+                          onPressed: () async {
+                            final next = await ref
+                                .read(billRepositoryProvider)
+                                .markPaid(bill.id);
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context)
+                                  .showSnackBar(SnackBar(
+                                content: Text(next == null
+                                    ? 'Marked paid'
+                                    : 'Paid. Next bill created for ${DateFormat('d MMM').format(next.dueDate)}.'),
+                                duration: const Duration(seconds: 2),
+                              ));
+                            }
+                          },
+                          child: const Text('Mark paid',
+                              style: TextStyle(fontSize: 13)),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );

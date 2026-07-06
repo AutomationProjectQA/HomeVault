@@ -54,6 +54,29 @@ class AppDatabase extends _$AppDatabase {
     });
   }
 
+  /// Partial update + outbox in one transaction. Use this (with a companion)
+  /// when clearing a column to NULL: writing a full data class back converts
+  /// nulls to "absent" and silently leaves the old value in place.
+  Future<void> updateWithOutbox<T extends Table, R>(
+    TableInfo<T, R> table,
+    Insertable<R> changes, {
+    required String entityId,
+  }) {
+    return transaction(() async {
+      await (update(table)
+            ..where((t) =>
+                ((t as dynamic).id as GeneratedColumn<String>)
+                    .equals(entityId)))
+          .write(changes);
+      await into(outboxEntries).insert(OutboxEntriesCompanion.insert(
+        entityTable: table.actualTableName,
+        entityId: entityId,
+        operation: 'upsert',
+        queuedAt: DateTime.now(),
+      ));
+    });
+  }
+
   Future<List<OutboxEntry>> pendingOutbox({int limit = 50}) {
     return (select(outboxEntries)
           ..orderBy([(t) => OrderingTerm.asc(t.seq)])

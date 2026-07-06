@@ -14,6 +14,9 @@ class RecordingScheduler implements NotificationScheduler {
   Future<void> initialize() async {}
 
   @override
+  Future<bool> requestPermissions() async => true;
+
+  @override
   Future<void> scheduleChain({
     required String reminderId,
     required String title,
@@ -105,6 +108,26 @@ void main() {
     expect(scheduler.scheduled[reminder.id], [until]);
     final stored = (await db.select(db.reminders).get()).single;
     expect(stored.state, 'snoozed');
+  });
+
+  test('snoozed tasks stay visible in watchSnoozed; unsnooze wakes them',
+      () async {
+    final reminder = await repo.create(
+      homeId: 'home-1',
+      sourceType: 'manual',
+      title: 'Clean tank',
+      priority: 'medium',
+      dueAt: DateTime.now(),
+    );
+    await repo.snooze(reminder.id, DateTime.now().add(const Duration(days: 2)));
+
+    expect(await repo.watchToday().first, isEmpty);
+    expect((await repo.watchSnoozed().first).single.id, reminder.id);
+
+    await repo.unsnooze(reminder.id);
+    expect(await repo.watchSnoozed().first, isEmpty);
+    expect((await repo.watchToday().first).single.id, reminder.id);
+    expect(scheduler.scheduled.containsKey(reminder.id), isTrue);
   });
 
   test('sweepOverdue flips past-due reminders', () async {

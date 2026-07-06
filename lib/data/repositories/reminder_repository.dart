@@ -40,6 +40,37 @@ class ReminderRepository {
         .toList());
   }
 
+  /// Snoozed tasks that haven't woken yet — visible so "remind me later"
+  /// never means "gone".
+  Stream<List<Reminder>> watchSnoozed() {
+    final query = _db.select(_db.reminders)
+      ..where((t) =>
+          t.deletedAt.isNull() &
+          t.state.equals('snoozed') &
+          t.snoozedUntil.isNotNull())
+      ..orderBy([(t) => OrderingTerm.asc(t.snoozedUntil)]);
+    return query.watch().map((rows) => rows
+        .where((r) => r.snoozedUntil!.isAfter(DateTime.now()))
+        .toList());
+  }
+
+  /// Wakes a snoozed reminder immediately: back on today's list with its
+  /// normal chain re-armed.
+  Future<void> unsnooze(String id) async {
+    final reminder = await _byId(id);
+    final now = DateTime.now();
+    await _db.updateWithOutbox(
+      _db.reminders,
+      RemindersCompanion(
+        state: Value(reminder.dueAt.isBefore(now) ? 'overdue' : 'scheduled'),
+        snoozedUntil: const Value(null),
+        updatedAt: Value(now),
+      ),
+      entityId: id,
+    );
+    await _schedule(reminder);
+  }
+
   /// The next 7 days, excluding today's list.
   Stream<List<Reminder>> watchUpcoming() {
     final endOfToday = _endOfToday();
@@ -95,13 +126,13 @@ class ReminderRepository {
   Future<Reminder?> complete(String id) async {
     final reminder = await _byId(id);
     final now = DateTime.now();
-    await _db.upsertWithOutbox(
+    await _db.updateWithOutbox(
       _db.reminders,
-      reminder.copyWith(
-        state: 'completed',
+      RemindersCompanion(
+        state: const Value('completed'),
         completedAt: Value(now),
         snoozedUntil: const Value(null),
-        updatedAt: now,
+        updatedAt: Value(now),
       ),
       entityId: id,
     );
@@ -280,4 +311,8 @@ final todayTasksProvider = StreamProvider<List<Reminder>>((ref) {
 
 final upcomingTasksProvider = StreamProvider<List<Reminder>>((ref) {
   return ref.watch(reminderRepositoryProvider).watchUpcoming();
+});
+
+final snoozedTasksProvider = StreamProvider<List<Reminder>>((ref) {
+  return ref.watch(reminderRepositoryProvider).watchSnoozed();
 });

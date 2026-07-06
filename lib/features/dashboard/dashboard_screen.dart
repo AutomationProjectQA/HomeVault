@@ -30,6 +30,7 @@ class DashboardScreen extends StatelessWidget {
             _SectionTitle("Today's tasks"),
             SizedBox(height: AppSpacing.sm),
             TodayTasksList(emptyState: _EmptyTasksCard()),
+            _SnoozedSection(),
             SizedBox(height: AppSpacing.lg),
             _UpcomingSection(),
             _SectionTitle('Your home'),
@@ -179,6 +180,52 @@ class _EmptyTasksCard extends StatelessWidget {
             icon: const Icon(Icons.add),
             label: const Text('Add your first appliance'),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+/// "Remind me later" must never mean "gone": snoozed tasks stay visible
+/// here until they wake, with a one-tap way to bring them back now.
+class _SnoozedSection extends ConsumerWidget {
+  const _SnoozedSection();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final snoozed = ref.watch(snoozedTasksProvider).value ?? const [];
+    if (snoozed.isEmpty) return const SizedBox.shrink();
+
+    final dateFormat = DateFormat('EEE, d MMM');
+    return Padding(
+      padding: const EdgeInsets.only(top: AppSpacing.sm),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          for (final task in snoozed)
+            Row(
+              children: [
+                const Icon(Icons.snooze,
+                    size: 16, color: AppColors.textSecondary),
+                const SizedBox(width: AppSpacing.sm),
+                Expanded(
+                  child: Text(
+                    '${task.title} · back ${dateFormat.format(task.snoozedUntil!)}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                        fontSize: 13, color: AppColors.textSecondary),
+                  ),
+                ),
+                TextButton(
+                  onPressed: () => ref
+                      .read(reminderRepositoryProvider)
+                      .unsnooze(task.id),
+                  child: const Text('Wake now',
+                      style: TextStyle(fontSize: 12)),
+                ),
+              ],
+            ),
         ],
       ),
     );

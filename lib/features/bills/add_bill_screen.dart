@@ -13,7 +13,7 @@ import 'bill_types.dart';
 const _repeatOptions = [
   ('No repeat', null),
   ('Monthly', 'FREQ=MONTHLY'),
-  ('Every 30 days', 'FREQ=DAILY;INTERVAL=30'),
+  ('Every 2 months', 'FREQ=MONTHLY;INTERVAL=2'), // gas/electricity in many states
   ('Quarterly', 'FREQ=MONTHLY;INTERVAL=3'),
   ('Yearly', 'FREQ=YEARLY'),
 ];
@@ -175,7 +175,9 @@ class _AddBillScreenState extends ConsumerState<AddBillScreen> {
             ),
             const SizedBox(height: AppSpacing.md),
             DropdownButtonFormField<String?>(
-              initialValue: _rrule,
+              key: ValueKey(_rrule),
+              initialValue:
+                  _repeatOptions.any((o) => o.$2 == _rrule) ? _rrule : null,
               decoration: const InputDecoration(labelText: 'Repeats'),
               items: [
                 for (final (label, rule) in _repeatOptions)

@@ -8,6 +8,10 @@ import 'local_notification_scheduler.dart';
 abstract interface class NotificationScheduler {
   Future<void> initialize();
 
+  /// Explicitly (re)requests notification + exact-alarm permissions.
+  /// Returns whether notifications are permitted afterwards.
+  Future<bool> requestPermissions();
+
   /// Replaces all scheduled notifications for [reminderId] with [times].
   Future<void> scheduleChain({
     required String reminderId,
@@ -23,6 +27,9 @@ abstract interface class NotificationScheduler {
 class NoopNotificationScheduler implements NotificationScheduler {
   @override
   Future<void> initialize() async {}
+
+  @override
+  Future<bool> requestPermissions() async => false;
 
   @override
   Future<void> scheduleChain({

@@ -8,7 +8,9 @@ import 'package:share_plus/share_plus.dart';
 
 import '../../core/services/app_lock_service.dart';
 import '../../core/services/export_service.dart';
+import '../../core/services/notifications/notification_scheduler.dart';
 import '../../core/services/settings_service.dart';
+import '../../data/repositories/reminder_repository.dart';
 import '../../core/theme/tokens.dart';
 
 class SettingsScreen extends ConsumerWidget {
@@ -72,11 +74,25 @@ class SettingsScreen extends ConsumerWidget {
             trailing: const Icon(Icons.chevron_right),
             onTap: () => context.push(Routes.privacy),
           ),
-          const ListTile(
-            leading: Icon(Icons.notifications_outlined),
-            title: Text('Notifications'),
-            subtitle: Text('Reminder times, quiet hours — coming in Sprint 3'),
-            enabled: false,
+          ListTile(
+            leading: const Icon(Icons.notifications_outlined),
+            title: const Text('Notifications'),
+            subtitle: const Text('Allow reminders & exact alarms'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () async {
+              final granted = await ref
+                  .read(notificationSchedulerProvider)
+                  .requestPermissions();
+              if (granted) {
+                await ref.read(reminderRepositoryProvider).rescheduleAll();
+              }
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                    content: Text(granted
+                        ? 'Notifications enabled — reminders re-armed.'
+                        : 'Not enabled. Allow HomeVault notifications in system settings.')));
+              }
+            },
           ),
           ListTile(
             leading: const Icon(Icons.download_outlined),
